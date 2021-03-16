@@ -1,0 +1,68 @@
+- name : Launch k8s node
+  hosts : localhost
+  gather_facts : no
+  vars :
+    Nodes :
+      Master_k8s :
+        count : 1
+      Worker_k8s :
+        count : 2
+  vars_files : 
+    - credentials.yml
+    - web_vars.yml
+  tasks : 
+    - name : boto package for aws
+      pip : 
+        name : [boto, boto3 ,botocore]
+        state : present
+    - name : Launch k8s nodes
+      ec2:
+        assign_public_ip: true
+        aws_access_key   : "{{id}}"
+        aws_secret_key   : "{{key}}"
+        vpc_subnet_id    : "{{subnet}}"
+        group_id         : "{{sg}}"
+        wait             : yes
+        key_name         : "{{key_name}}"
+        region           : "{{region}}"
+        instance_type    : "{{instance_type}}"
+        image            : "{{image_id}}"
+        instance_tags:
+          Name : "{{ item.key }}"
+          Type : Node
+        count_tag:
+            Name : "{{ item.key }}"
+            Type : Node
+        exact_count: "{{item.value.count}}"
+      loop : "{{ lookup('dict', Nodes) }}"
+
+    - pause :
+        seconds : 20
+        
+    - name : Refresh Inventory
+      meta : refresh_inventory
+
+- name : Configure basic setup on all nodes
+  hosts : tag_Type_Node
+  gather_facts : no
+  remote_user : ec2-user
+  become : yes
+  roles : 
+  - k8s_node
+
+- name : Configuring master 
+  hosts : tag_Name_Master_k8s
+  gather_facts : no
+  remote_user : ec2-user
+  become : yes
+  roles : 
+  - k8s_master
+
+- name : Joining cluster from worker node
+  hosts : tag_Name_Worker_k8s
+  gather_facts : no
+  remote_user : ec2-user
+  become : yes
+  roles : 
+  - k8s_worker
+  
