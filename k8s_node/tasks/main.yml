@@ -1,0 +1,39 @@
+---
+# tasks file for k8s_node
+
+- name : Setup k8s repo
+  copy :
+      src : kubernetes.repo
+      dest : /etc/yum.repos.d/kubernetes.repo
+
+- name : Install packages
+  package :
+      name  : [docker,kubeadm,kubelet,kubectl,iproute-tc]
+      state : present
+
+- name : Start docker and kubelet services
+  service :
+      name : "{{ item }}"
+      state : started
+      enabled : yes
+  with_items :
+      - docker
+      - kubelet
+
+- name: Set bridge-nf ip6tables to 1
+  sysctl:
+      name: net.bridge.bridge-nf-call-ip6tables
+      value: 1
+      state: present
+
+- name: set bridge-nf iptables to 1
+  sysctl:
+      name: net.bridge.bridge-nf-call-iptables
+      value: 1
+      state: present
+
+- name : Change docker Cgroup Driver
+  copy :
+      src : docker_driver.json
+      dest : /etc/docker/daemon.json
+  notify : restart_docker_service

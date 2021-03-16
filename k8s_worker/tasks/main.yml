@@ -1,0 +1,8 @@
+---
+# tasks file for k8s_worker
+
+  - name : Join master
+    shell  : "{{ hostvars[groups['tag_Name_Master_k8s'][0]].join_command }} --ignore-preflight-errors=NumCPU,Mem >> joined_node.txt"
+    args :
+      chdir : $HOME
+      creates : joined_node.txt

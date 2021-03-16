@@ -1,0 +1,5 @@
+---
+# vars file for k8s_master
+
+ansible_private_key_file : /root/.ssh/ansiblekey.pem
+pod_ip_cidr : "172.1.0.0/16"
